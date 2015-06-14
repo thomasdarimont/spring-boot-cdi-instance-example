@@ -22,6 +22,7 @@ import demo.greet.Formal;
 import demo.greet.FormalGreeter;
 import demo.greet.Greeter;
 import demo.greet.HighestPriorityGreeter;
+import demo.greet.Official;
 import demo.greet.PriorityGreeter;
 import demo.greet.SimpleGreeter;
 
@@ -82,14 +83,19 @@ public class SimpleCdiInstanceAdapterTests {
 
 	@Test
 	public void returnFormalGreeter() throws Exception {
-		assertThat(greeters.select(qualifier(Formal.class)).get()).isInstanceOf(FormalGreeter.class);
+
+		Instance<Greeter> formalGreeters = greeters.select(qualifier(Formal.class));
+		
+		assertThat(formalGreeters.isUnsatisfied()).isFalse();
+		assertThat(formalGreeters.isAmbiguous()).isFalse();
+		assertThat(formalGreeters.get()).isInstanceOf(FormalGreeter.class);
 	}
 
 	@Test
 	public void returnCountryStyleGreeter() throws Exception {
 		assertThat(greeters.select(qualifier(CountryStyle.class)).get()).isInstanceOf(CountryStyleGreeter.class);
 	}
-
+	
 	@Test
 	public void listInstances() throws Exception {
 
@@ -97,5 +103,25 @@ public class SimpleCdiInstanceAdapterTests {
 		greeters.iterator().forEachRemaining(System.out::println);
 
 		assertThat(greeters.iterator()).hasSize(beanFactory.getBeansOfType(Greeter.class).size());
+	}
+	
+	@Test
+	public void ambiguousMatch() throws Exception {
+
+		Instance<Greeter> officalGreeters = greeters.select(qualifier(Official.class));
+		
+		assertThat(officalGreeters.isUnsatisfied()).isFalse();
+		assertThat(officalGreeters.isAmbiguous()).isTrue();
+		assertThat(officalGreeters.get()).isInstanceOf(Greeter.class); //first match
+	}
+	
+	@Test
+	public void matchMultipleQualifiers() throws Exception {
+
+		Instance<Greeter> officalFormalGreeters = greeters.select(qualifier(Official.class), qualifier(Formal.class));
+		
+		assertThat(officalFormalGreeters.isUnsatisfied()).isFalse();
+		assertThat(officalFormalGreeters.isAmbiguous()).isFalse();
+		assertThat(officalFormalGreeters.get()).isInstanceOf(FormalGreeter.class); //first match
 	}
 }

@@ -1,5 +1,6 @@
 package demo.greet;
 
+@Official
 public class SimpleGreeter implements Greeter{
 
 	@Override
