@@ -13,6 +13,7 @@ import javax.enterprise.util.TypeLiteral;
 
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.ListableBeanFactory;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.config.DependencyDescriptor;
 import org.springframework.beans.factory.support.BeanDefinitionRegistry;
 import org.springframework.context.annotation.ContextAnnotationAutowireCandidateResolver;
@@ -45,11 +46,20 @@ public class CustomAutowireCandidateResolver extends ContextAnnotationAutowireCa
 		Class targetType = descriptor.getResolvableType().getGeneric(0).getRawClass();
 		Map<String, Object> beansOfType = listableBeanFactory.getBeansOfType(targetType);
 
-		List<Bean> beans = beansOfType.entrySet().stream() //
+		List<Bean> beansInstances = beansOfType.entrySet().stream() //
 				.map(e -> new Bean(e.getValue(), registry.getBeanDefinition(e.getKey()).isPrimary()))//
 				.collect(Collectors.toList());
 
-		return new Beans(targetType, beans);
+		Annotation[] qualifiers = retainQualifierAnnotations(descriptor.getAnnotations());
+
+		Beans beans = new Beans(targetType, beansInstances);
+		return qualifiers.length == 0 ? beans : beans.select(qualifiers);
+	}
+
+	private Annotation[] retainQualifierAnnotations(Annotation[] annotations) {
+		return Arrays.stream(annotations) //
+				.filter(a -> a.annotationType().isAnnotationPresent(Qualifier.class)) //
+				.toArray(Annotation[]::new);
 	}
 
 	static class Beans<T> implements Instance<T> {
@@ -85,7 +95,8 @@ public class CustomAutowireCandidateResolver extends ContextAnnotationAutowireCa
 				return highestPrioBean;
 			}
 
-			//TODO figure out a sane default to use here - maybe throw an exception?
+			// TODO figure out a sane default to use here - maybe throw an
+			// exception?
 			return beans.get(0).getInstance();
 		}
 

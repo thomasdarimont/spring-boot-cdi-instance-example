@@ -67,6 +67,11 @@ public class SimpleCdiInstanceAdapterTests {
 
 	@Autowired
 	private Instance<Greeter> greeters;
+	
+	@Autowired
+	@Official
+	private Instance<Greeter> officialGreeters;
+	
 
 	@Autowired
 	private ListableBeanFactory beanFactory;
@@ -123,5 +128,10 @@ public class SimpleCdiInstanceAdapterTests {
 		assertThat(officalFormalGreeters.isUnsatisfied()).isFalse();
 		assertThat(officalFormalGreeters.isAmbiguous()).isFalse();
 		assertThat(officalFormalGreeters.get()).isInstanceOf(FormalGreeter.class); //first match
+	}
+	
+	@Test
+	public void matchOnlyOfficialGreeters() {
+		assertThat(officialGreeters.iterator()).hasSize(2);
 	}
 }

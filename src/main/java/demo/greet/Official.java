@@ -8,7 +8,7 @@ import java.lang.annotation.Target;
 import org.springframework.beans.factory.annotation.Qualifier;
 
 @Qualifier
-@Target(ElementType.TYPE)
+@Target({ElementType.TYPE, ElementType.METHOD,ElementType.FIELD})
 @Retention(RetentionPolicy.RUNTIME)
 public @interface Official {
 }
