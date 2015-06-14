@@ -1,7 +1,6 @@
 package demo;
 
 import java.lang.annotation.Annotation;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
@@ -12,7 +11,6 @@ import javax.enterprise.inject.Instance;
 import javax.enterprise.util.TypeLiteral;
 
 import org.springframework.beans.factory.DisposableBean;
-import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.core.annotation.Order;
 
 public class Instances {
@@ -25,11 +23,11 @@ public class Instances {
 			this.type = type;
 		}
 
-		abstract List<Bean> getBeans();
+		protected abstract List<Bean> getBeans();
 
 		@Override
 		public T get() {
-			return (T)findDefaultInstance();
+			return (T) findDefaultInstance();
 		}
 
 		protected Object findDefaultInstance() {
@@ -45,7 +43,7 @@ public class Instances {
 			if (highestPrioBean != null) {
 				return highestPrioBean;
 			}
-			
+
 			return beans.get(0).getInstance();
 		}
 
@@ -56,11 +54,12 @@ public class Instances {
 
 			for (Bean bean : beans) {
 
-				if (bean.getDefinition().isPrimary()) {
+				if (bean.isPrimary()) {
 					return bean.getInstance();
 				}
-				
-				//TODO figure out to retrieve order from BeanDefinition
+
+				// TODO figure out to retrieve order from BeanDefinition /
+				// BeanDeclaration
 
 				Object instance = bean.getInstance();
 				Order order = instance.getClass().getAnnotation(Order.class);
@@ -90,12 +89,12 @@ public class Instances {
 		}
 
 		protected List<Bean> filterBeans(Class<?> subtype, Annotation... qualifiers) {
-			return getBeans()
-					.stream()
-					.filter(bean -> subtype.isInstance(bean.getInstance()))
-					.filter(
-							bean -> Arrays.asList(bean.getInstance().getClass().getAnnotations()).containsAll(
-									Arrays.asList(qualifiers))) //
+			
+			List<Annotation> requiredQualifiers = Arrays.asList(qualifiers);
+			
+			return getBeans().stream() //
+					.filter(bean -> subtype.isInstance(bean.getInstance())) //
+					.filter(bean -> bean.getAnnotations().containsAll(requiredQualifiers)) //
 					.collect(Collectors.toList());
 		}
 
@@ -135,49 +134,49 @@ public class Instances {
 		}
 	}
 
-	static class InstanceAdapter extends AbstractInstance<Object> {
+	static class BeanInstance extends AbstractInstance<Object> {
 
 		private final List<Bean> beans;
 
-		public InstanceAdapter(Class<?> type, List<Bean> beans) {
+		public BeanInstance(Class<?> type, List<Bean> beans) {
 			super(type);
 			this.beans = beans;
 		}
 
 		@Override
-		List<Bean> getBeans() {
-			return new ArrayList<Bean>(beans);
+		protected List<Bean> getBeans() {
+			return beans;
 		}
 
 		@Override
 		@SuppressWarnings("unchecked")
 		public <U extends Object> Instance<U> select(Class<U> subtype, Annotation... qualifiers) {
-			return (Instance<U>) new InstanceAdapter(subtype, filterBeans(subtype, qualifiers));
+			return (Instance<U>) new BeanInstance(subtype, filterBeans(subtype, qualifiers));
 		}
 	}
 
 	static class Bean {
 
-		private final String name;
-		private final BeanDefinition definition;
+		private final boolean primary;
 		private final Object instance;
+		private final List<Annotation> annotations;
 
-		public Bean(String name, BeanDefinition definition, Object instance) {
-			this.name = name;
-			this.definition = definition;
+		public Bean(Object instance, boolean primary) {
+			this.primary = primary;
 			this.instance = instance;
-		}
-
-		public String getName() {
-			return name;
-		}
-
-		public BeanDefinition getDefinition() {
-			return definition;
+			this.annotations = Arrays.asList(instance.getClass().getAnnotations());
 		}
 
 		public Object getInstance() {
 			return instance;
+		}
+
+		public boolean isPrimary() {
+			return primary;
+		}
+
+		public List<Annotation> getAnnotations() {
+			return annotations;
 		}
 	}
 }
