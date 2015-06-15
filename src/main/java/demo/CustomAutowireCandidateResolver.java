@@ -27,13 +27,14 @@ public class CustomAutowireCandidateResolver extends ContextAnnotationAutowireCa
 	@Override
 	public Object getLazyResolutionProxyIfNecessary(DependencyDescriptor descriptor, String beanName) {
 
-		if (IS_CDI_INSTANCE_CLASS_PRESENT && !Instance.class.equals(descriptor.getDependencyType())) {
-			return super.getLazyResolutionProxyIfNecessary(descriptor, beanName);
+		if (IS_CDI_INSTANCE_CLASS_PRESENT && Instance.class.equals(descriptor.getDependencyType())) {
+
+			// TODO refactor getLazyResolutionProxyIfNecessary to allow to
+			// customize lazy dependency resolution for Instance<T>
+			return getInstanceAdapterFor(descriptor);
 		}
 
-		// TODO refactor getLazyResolutionProxyIfNecessary to allow to customize
-		// lazy dependency resolution for Instance<T>
-		return getInstanceAdapterFor(descriptor);
+		return super.getLazyResolutionProxyIfNecessary(descriptor, beanName);
 	}
 
 	@SuppressWarnings({ "unchecked", "rawtypes" })
